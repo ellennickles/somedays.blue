@@ -4,18 +4,18 @@ Synaesthetic calendar 2026
 Ellen Nickles
 */
 
-const myColors = [
-  "hsla(208, 100%, 97%, 0.95)", // 0 aliceblue
-  "hsla(60, 100%, 94%, 0.95)", // 1 light yellow
-  "hsla(240, 100%, 50%, 0.95)", // 2 blue
-  "hsla(39, 100%, 50%, 0.95)", // 3 orange
-  "hsla(0, 100%, 50%, 0.92)", // 4 red
-  "hsla(271, 76%, 53%, 0.95)", // 5 blueviolet
-  "hsla(300, 100%, 48%, 0.95)", // 6 magenta variation
-  "hsla(130, 100%, 28%, 0.95)", // 7 green variation
-  "hsla(27, 100%, 50%, 0.95)", // 8 darker orange
-  "hsla(348, 83%, 42%, 0.95)", // 9 crimson
-];
+const myNumbers = {
+  0: "hsla(208, 100%, 97%, 0.95)",  // aliceblue
+  1: "hsla(60, 100%, 94%, 0.95)",   // light yellow
+  2: "hsla(240, 100%, 50%, 0.95)",  // blue
+  3: "hsla(39, 100%, 50%, 0.95)",   // orange
+  4: "hsla(0, 100%, 50%, 0.92)",    // red
+  5: "hsla(271, 76%, 53%, 0.95)",   // blueviolet
+  6: "hsla(300, 100%, 48%, 0.95)",  // magenta variation
+  7: "hsla(130, 100%, 28%, 0.95)",  // green variation
+  8: "hsla(27, 100%, 50%, 0.95)",   // darker orange
+  9: "hsla(348, 83%, 42%, 0.95)",   // crimson
+};
 
 function getCurrentDateDigits() {
   const now = new Date();
@@ -55,10 +55,10 @@ function transitionStops(prevColor, currColor, startPct, endPct) {
 // element means no panel boundaries and therefore no sub-pixel seams.
 function buildGradient(digits) {
   const segment = 100 / digits.length;
-  const stops = [`${myColors[parseInt(digits[0])]} 0%`];
+  const stops = [`${myNumbers[digits[0]]} 0%`];
   for (let i = 1; i < digits.length; i++) {
-    const prevColor = myColors[parseInt(digits[i - 1])];
-    const currColor = myColors[parseInt(digits[i])];
+    const prevColor = myNumbers[digits[i - 1]];
+    const currColor = myNumbers[digits[i]];
     const shift = digits.length === 4
       ? FOUR_DIGIT_SHIFT
       : (i === digits.length - 1 ? LAST_DIGIT_SHIFT : 0);
