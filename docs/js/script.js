@@ -17,26 +17,73 @@ const myNumbers = {
   9: "hsla(348, 83%, 42%, 0.95)",   // crimson
 };
 
-function getCurrentDateDigits() {
+const myLetters = {
+  a: "hsla(0, 100%, 50%, 0.92)",      // red
+  b: "hsla(39, 100%, 50%, 0.95)",     // orange
+  c: "#fafa5bf2",                     // yellow
+  d: "hsla(130, 98%, 40%, 0.95)",     // green variation
+  e: "hsla(240, 100%, 50%, 0.95)",    // blue
+  f: "hsla(271, 76%, 53%, 0.95)",     // blueviolet
+  g: "hsla(300, 100%, 48%, 0.95)",    // magenta variation
+  h: "hsla(39, 100%, 50%, 0.95)",     // orange
+  i: "#ffffe0f2",                     // light yellow
+  j: "hsla(130, 98%, 40%, 0.95)",     // green
+  k: "hsla(240, 100%, 50%, 0.95)",    // blue
+  l: "hsla(271, 76%, 53%, 0.95)",     // blueviolet
+  m: "hsla(0, 100%, 50%, 0.92)",      // red
+  n: "hsla(39, 100%, 50%, 0.95)",     // orange
+  o: "#ffffe0f2",                     // light yellow
+  p: "hsla(130, 98%, 40%, 0.95)",     // green
+  q: "hsla(240, 100%, 50%, 0.95)",    // blue
+  r: "hsla(271, 76%, 53%, 0.95)",     // blueviolet
+  s: "hsla(240, 100%, 50%, 0.95)",    // blue
+  t: "hsla(39, 100%, 50%, 0.95)",     // orange
+  u: "#ffffe0f2",                     // light yellow
+  v: "hsla(130, 98%, 40%, 0.95)",     // green
+  w: "hsla(240, 100%, 50%, 0.95)",    // blue
+  x: "hsla(271, 76%, 53%, 0.95)",     // blueviolet
+  y: "hsla(300, 100%, 48%, 0.95)",    // magenta variation
+  z: "hsla(39, 100%, 50%, 0.95)",     // orange
+};
+
+const MONTH_NAMES = [
+  'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+];
+
+// Sequence of colors for today: 3 letters of the month abbreviation,
+// then the 2 zero-padded digits of the day.
+function getCurrentDateColors() {
   const now = new Date();
-  const month = now.getMonth() + 1;
+  const monthLetters = MONTH_NAMES[now.getMonth()];
   const day = String(now.getDate()).padStart(2, '0');
-  return `${month}${day}`;
+  const colors = [];
+  for (const ch of monthLetters) colors.push(myLetters[ch.toLowerCase()]);
+  for (const ch of day) colors.push(myNumbers[ch]);
+  return colors;
 }
 
-const GRADIENT_END = 45;
-// The last digit has no neighbor to bleed into, so its solid color block
-// reads narrower than the other digits. Shifting its transition earlier
-// widens that block. Higher = wider last block (max ~GRADIENT_END).
-const LAST_DIGIT_SHIFT = 18;
-// With 4 digits every block should read as an even quarter of the width.
-// The gamma-skewed blend pushes each perceived color boundary right of its
-// segment line, so all transitions shift left by this same amount to pull
-// the boundaries back onto the 25/50/75 quarter marks.
-const FOUR_DIGIT_SHIFT = 37;
+// Month half and day half each fill 50% of the width, regardless of how
+// many characters live inside — matching the prior layout where the month
+// read as ~half the width whether it was 1 or 2 digits. Within each half,
+// the characters are evenly spaced (letters: 16.67% each, digits: 25% each).
+const BOUNDARIES = [50 / 3, 100 / 3, 50, 75];
 
-// chroma-interpolated stops for one digit-to-digit transition, with the
-// first and last color pinned to absolute positions across the full width.
+// Each transition between two adjacent colors uses a window of this width.
+const WINDOW = 15;
+// Baseline leftward shift of the window relative to its boundary. The
+// gamma-skewed blend pushes the perceived color boundary toward the right
+// end of the window, so placing most of the window before the actual
+// boundary pulls the perceived boundary back onto it.
+const WINDOW_SHIFT = 12.5;
+// The last block has no neighbor after it to bleed into. In layouts where
+// that makes it read narrow, this extra leftward shift on the preceding
+// transition widens it. Set to 0 when the final block already reads at
+// its target width without help.
+const LAST_BLOCK_EXTRA_SHIFT = 0;
+
+// chroma-interpolated stops for one transition between two adjacent colors,
+// with the first and last color pinned to absolute positions across the width.
 function transitionStops(prevColor, currColor, startPct, endPct) {
   const colors = chroma
     .scale([prevColor, currColor])
@@ -50,28 +97,25 @@ function transitionStops(prevColor, currColor, startPct, endPct) {
   });
 }
 
-// One linear-gradient across the whole width: the width is split into equal
-// segments, one per digit, with the color transitions baked in. A single
-// element means no panel boundaries and therefore no sub-pixel seams.
-function buildGradient(digits) {
-  const segment = 100 / digits.length;
-  const stops = [`${myNumbers[digits[0]]} 0%`];
-  for (let i = 1; i < digits.length; i++) {
-    const prevColor = myNumbers[digits[i - 1]];
-    const currColor = myNumbers[digits[i]];
-    const shift = digits.length === 4
-      ? FOUR_DIGIT_SHIFT
-      : (i === digits.length - 1 ? LAST_DIGIT_SHIFT : 0);
-    const start = segment * (i - shift / 100);
-    const end = segment * (i + (GRADIENT_END - shift) / 100);
-    stops.push(...transitionStops(prevColor, currColor, start, end));
+// One linear-gradient across the whole width: month letters share the
+// left 50%, day digits share the right 50%, with color transitions baked
+// in. A single element means no panel boundaries and no sub-pixel seams.
+function buildGradient(colors) {
+  const stops = [`${colors[0]} 0%`];
+  for (let i = 1; i < colors.length; i++) {
+    const boundary = BOUNDARIES[i - 1];
+    const isLast = i === colors.length - 1;
+    const shift = WINDOW_SHIFT + (isLast ? LAST_BLOCK_EXTRA_SHIFT : 0);
+    const start = boundary - shift;
+    const end = boundary + (WINDOW - shift);
+    stops.push(...transitionStops(colors[i - 1], colors[i], start, end));
   }
   return `linear-gradient(90deg, ${stops.join(',')})`;
 }
 
 function render() {
   const calendarDay = document.querySelector('.calendarDay');
-  calendarDay.style.backgroundImage = buildGradient(getCurrentDateDigits());
+  calendarDay.style.backgroundImage = buildGradient(getCurrentDateColors());
 }
 
 window.onload = () => {
