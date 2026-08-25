@@ -24,7 +24,7 @@ const myLetters = {
   d: "hsla(130, 98%, 40%, 0.95)",     // green variation
   e: "hsla(240, 100%, 50%, 0.95)",    // blue
   f: "hsla(271, 76%, 53%, 0.95)",     // blueviolet
-  g: "hsla(300, 100%, 48%, 0.95)",    // magenta variation
+  g: "hsla(271, 76%, 53%, 0.95)",     // blueviolet
   h: "hsla(39, 100%, 50%, 0.95)",     // orange
   i: "#ffffe0f2",                     // light yellow
   j: "hsla(130, 98%, 40%, 0.95)",     // green
